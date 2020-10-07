@@ -7,13 +7,14 @@ output: github_document
 Load the library
 ```{r}
 library(tidyverse)
+library(patchwork)
 library(p8105.datasets)
 ```
 
 Define the setup:
 ```{r}
 knitr::opts_chunk$set(
-	fig.width = 6, 
+	fig.width = 10, 
   fig.asp = .6,
   out.width = "90%"
 )
@@ -26,6 +27,8 @@ scale_colour_discrete = scale_colour_viridis_d
 scale_fill_discrete = scale_fill_viridis_d
 ```
 
+
+
 #Problem 1  
 Load the data:
 ```{r}
@@ -35,16 +38,16 @@ This dataset contains `r nrow(instacart)` rows and `r ncol(instacart)` columns.
 
 Observations are the level of items in orders by user. There are user / order variables -- user ID, order ID, order day, and order hour. There are also item variables -- name, aisle, department, and some numeric codes.
 
-question 1: how many aisles & which aisles are the most items ordered from?
+###question 1: how many aisles & which aisles are the most items ordered from?
 ```{r}
 aisle_df =
 instacart  %>% 
         count(aisle) %>% 
         arrange(desc(n))
 ```
-There are `r nrow(aisle_df)` aisles and fresh vegetables is the most item ordered from.
+There are `r nrow(aisle_df)` aisles and `r pull(head(aisle_df, 1),aisle)` is the most item ordered from.
 
-question 2: make a plot that shows the number of items ordered in each aisle.
+###question 2: make a plot that shows the number of items ordered in each aisle.
 ```{r}
 instacart %>% 
         count(aisle) %>% 
@@ -58,7 +61,7 @@ instacart %>%
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
 
-question 3: make a table showing the three most popular items in each of the aisles:
+###question 3: make a table showing the three most popular items in each of the aisles:
 ```{r}
 instacart %>% 
 	filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits")) %>% 
@@ -70,7 +73,7 @@ instacart %>%
         knitr::kable()
 ```
 
-question 4: make a table showing the mean hour of the day:
+###question 4: make a table showing the mean hour of the day:
 ```{r}
 instacart %>% 
         filter(product_name %in% c("Pink Lady Apples", "Coffee Ice Cream")) %>%
@@ -79,7 +82,129 @@ instacart %>%
         pivot_wider(
                 names_from = order_dow,
                 values_from = mean_hour_of_day
-                    ) %>% 
+                    ) %>%
+        rename("Sunday" = "0", 
+               "Monday" = "1", 
+               "Tuesday" = "2", 
+               "Wednesday" = "3", 
+               "Thurday" = "4", 
+               "Friday" = "5", 
+               "Saturday" = "6") %>% 
         knitr::kable()
 ```
+
+#Problem 2  
+
+###Question 1: load, tidy, and wrangle the data:  
+
+Load and clean the data:
+```{r}
+accel_df = read_csv("./data/accel_data.csv") %>%
+        janitor::clean_names() %>% 
+        pivot_longer(
+                activity_1:activity_1440,
+                names_to = "minute_of_the_day",
+                values_to = "activity_counts"
+        ) %>% 
+        separate(minute_of_the_day, into = c("activity", "minute_of_day"), sep = 9) %>% 
+        mutate(
+                minute_of_day = as.numeric(minute_of_day)) %>% 
+        mutate(
+                weekend_weekday = recode(day, "Friday" = "Weekday", "Monday" = "Weekday", "Tuesday" = "Weekday", "Wednesday" = "Weekday", "Thursday" = "Weekday", "Saturday" = "Weekend", "Sunday" = "Weekend")
+        ) %>% 
+        mutate(
+                day_of_the_week = day
+        ) %>% 
+        mutate(
+                no_of_day = recode(day_of_the_week, 
+                        "Monday" = "1", 
+                        "Tuesday" = "2", 
+                        "Wednesday" = "3", 
+                        "Thursday" = "4", 
+                        "Friday" = "5", 
+                        "Saturday" = "6", 
+                        "Sunday" = "7")
+                ) %>% 
+        mutate(
+                no_of_day = as.numeric(no_of_day),
+                day_of_the_week = as_factor(day_of_the_week),
+                day_of_the_week = fct_reorder(day_of_the_week, no_of_day)
+        ) %>% 
+        group_by(week) %>% 
+        arrange(day_of_the_week, desc(no_of_day), .by_group = TRUE) %>% 
+        select(-activity, -day, -no_of_day) %>%
+        relocate(week, day_of_the_week, weekend_weekday) 
+```
+This dataset shows the information about time which includes number of week, number of day, day of the week, weekend or weekday, and minute of the day. The activity counts on each minute is also a key variable in this dataset. There are `r nrow(accel_df)` observations in this dataset. And there are `r nrow(accel_df)` rows and `r ncol(accel_df)` columns in this dataset.     
+
+###Question 2: create a table showing the total activity for each day:  
+
+Create a table:
+```{r}
+accel_df %>% 
+         group_by(week, day_of_the_week) %>% 
+         summarise(sum_activity = sum(activity_counts)) %>% 
+         knitr::kable()
+```
+
+Create plots showing the trend:
+```{r}
+day_id_plot =
+        accel_df %>% 
+        group_by(week, day_id, day_of_the_week) %>% 
+        summarise(total_activity = sum(activity_counts)) %>% 
+        ggplot(aes(x = day_id, y = total_activity, color = day_of_the_week)) +
+        geom_point() +
+        geom_line()
+weekday_weekend_plot = 
+        accel_df %>% 
+        group_by(week, weekend_weekday) %>% 
+        summarise(mean_activity = mean(activity_counts)) %>% 
+        ggplot(aes(x = week, y = mean_activity, color = weekend_weekday)) +
+        geom_point() +
+        geom_line()
+week_plot = 
+        accel_df %>% 
+        group_by(week) %>% 
+        summarise(mean_week_activity = mean(activity_counts)) %>% 
+        ggplot(aes(x = week, y = mean_week_activity)) +
+        geom_point() +
+        geom_line()
+
+day_id_plot/(weekday_weekend_plot + week_plot)
+
+```
+
+From the week_plot, we can find that this 63 year-old male has more acitvities for the second week and the third week than for the forth week and the fifth week since the mean of the activity counts shows the trend.     
+For the weekend_weekday plot, we can see that during the weekdays, he has regular activities. However, during the weekend, his activities decreased a lot during five weeks since the mean of activity counts during the weekend decreased a lot.   
+For the day_id_plot, we can see that he has moderate and regular activities on Tuesday, Wednesday, and Thursday. However, the amount of activity counts fluctuated a lot on Monday, Friday, and Saturday.
+
+###Question 3 :  
+
+Create a plot:
+```{r}
+accel_df %>%
+        ggplot(aes(x = minute_of_day, y = activity_counts, color = day_of_the_week)) +
+        geom_line(alpha = 0.2) +
+        stat_smooth(se = FALSE)
+```
+Zoom in the plot above:
+```{r}
+accel_df %>% 
+        ggplot(aes(x = minute_of_day, y = activity_counts, color = day_of_the_week)) +
+        geom_line(alpha = 0.2) + 
+        stat_smooth(se = FALSE) + 
+        coord_cartesian(ylim = c(0, 2500))
+```
+
+The plot after zooming in shows the activity counts in each minute during 5 weeks and the information of the mean of activity counts for each day of the week. We can see that the acitivity counts of this 63 year-old male fluctuated a lot during a day. From 0 to 300 minutes(which equals 0:00 to 5:00), the activity counts are relatively low. After 300 minute(which equals to 5:00), the activity counts increased a lot. Around 1300 minutes(which equals to 21:40), the activity counts start to decrease. Until 1440 minutes(which equals to 24:00), the activity counts decreased to zero.  
+And we can see that on Sunday, from 500 minutes to 750 minutes(which equals 8:20 to 12:30), he have more activity counts compared to the activity counts during the same period on other days. From 1100 minutes to 1400 minutes(which equals 18:20 to 23:20) on Friday, he have more activity counts compared to the activity counts during the same period on other days.  
+
+#Problem 3
+Load the data:
+```{r}
+library(p8105.datasets)
+data("ny_noaa")
+```
+
 
