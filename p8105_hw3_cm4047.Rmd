@@ -117,13 +117,13 @@ accel_df = read_csv("./data/accel_data.csv") %>%
         ) %>% 
         mutate(
                 no_of_day = recode(day_of_the_week, 
-                        "Monday" = "1", 
-                        "Tuesday" = "2", 
-                        "Wednesday" = "3", 
-                        "Thursday" = "4", 
-                        "Friday" = "5", 
-                        "Saturday" = "6", 
-                        "Sunday" = "7")
+                        "Sunday" = "1",
+                        "Monday" = "2", 
+                        "Tuesday" = "3", 
+                        "Wednesday" = "4", 
+                        "Thursday" = "5", 
+                        "Friday" = "6", 
+                        "Saturday" = "7")
                 ) %>% 
         mutate(
                 no_of_day = as.numeric(no_of_day),
@@ -200,11 +200,90 @@ accel_df %>%
 The plot after zooming in shows the activity counts in each minute during 5 weeks and the information of the mean of activity counts for each day of the week. We can see that the acitivity counts of this 63 year-old male fluctuated a lot during a day. From 0 to 300 minutes(which equals 0:00 to 5:00), the activity counts are relatively low. After 300 minute(which equals to 5:00), the activity counts increased a lot. Around 1300 minutes(which equals to 21:40), the activity counts start to decrease. Until 1440 minutes(which equals to 24:00), the activity counts decreased to zero.  
 And we can see that on Sunday, from 500 minutes to 750 minutes(which equals 8:20 to 12:30), he have more activity counts compared to the activity counts during the same period on other days. From 1100 minutes to 1400 minutes(which equals 18:20 to 23:20) on Friday, he have more activity counts compared to the activity counts during the same period on other days.  
 
-#Problem 3
+#Problem 3  
+
 Load the data:
 ```{r}
 library(p8105.datasets)
 data("ny_noaa")
 ```
+This dataset includes `r ncol(ny_noaa)` columns and `r nrow(ny_noaa)` rows. It shows some information for all New York state weather stations from January 1, 1981 through December 31, 2010. There are some key variables, which include ID of weather station, date of observation, precipitation, temperature, and snow. For the total `r nrow(ny_noaa)` rows, there is `r nrow(ny_noaa[complete.cases(ny_noaa),])` rows which does not include NA, meaning around half of the rows include NAs in this dataset. It is problematic to some extent since there are so many NAs.
 
+###Question 1 : data cleaning:  
+
+```{r}
+noaa_df = 
+ny_noaa %>% 
+        separate(date, into = c("year", "month", "day"), sep = "-") %>%
+        mutate(
+                tmax = as.numeric(tmax),
+                tmin = as.numeric(tmin)
+        ) %>% 
+        mutate(
+                prcp = prcp/10,
+                tmax = tmax/10,
+                tmin = tmin/10
+        )
+snow_count_df =
+        noaa_df %>% 
+        count(snow) %>% 
+        arrange(desc(n))
+```
+From the dataset, we can conclude that for snowfall, the first three commonly observed values are `r pull(head(snow_count_df, 3), snow)`. For the most commonly observed value of 0, it is because most of these day are not snowy, so there is no snowfall on that day. For the second commonly observed value of NA, it is because some data are missing due to various of reasons. For the third commonly observed value of 25, it is a moderate number of snowfall.
+
+###Question 2 : two-panel plot showing the average max temperature in January and in July:  
+
+```{r}
+ny_noaa %>%
+        separate(date, into = c("year", "month", "day"), sep = "-") %>%
+        filter(month %in% c("01", "07")) %>% 
+        group_by(year, month, id) %>% 
+        mutate(
+                tmax = as.numeric(tmax),
+                tmin = as.numeric(tmin)
+        ) %>% 
+        summarise(average_max_temperature = mean(tmax)) %>% 
+        ggplot(aes(x = year, y = average_max_temperature, color = month, group = id)) +
+        geom_point(alpha = .2) +
+        geom_path(alpha = .2) +
+        facet_grid(.~ month) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+  
+From the scatterplot above, we can see that the average max temperature in January is lower than that in July in each station across years. Also, there is no significant increasing or decreasing trend from 1981 to 2010 in January and July.
+```{r}
+noaa_df %>% 
+        filter(month %in% c("01", "07")) %>% 
+        group_by(year, month, id) %>% 
+        mutate(
+                tmax = as.numeric(tmax),
+                tmin = as.numeric(tmin)
+        ) %>% 
+        summarise(mean_max_temperature = mean(tmax)) %>% 
+        ggplot(aes(x = year, y = mean_max_temperature)) +
+        geom_boxplot() +
+        facet_grid(.~ month) +
+        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+  
+From the boxplot above, we can find that there are some outliers. In Januaury, most of the outliers are higher than the upper edge of the boxplot and in July, most of the outliers are lower than the lower edge of the boxplot, which make sense. This means, in July, the extreme temperature are not very high and in January, the extreme temperature are not very low.
+
+###Question 3: two-panel plot:  
+```{r}
+max_min_bin_plot = 
+        noaa_df %>%
+        ggplot(aes(x = tmin, y = tmax)) +
+        stat_bin2d(bins = 50) +
+        theme(legend.position = "right")
+       
+snow_gr_0_plot =
+        noaa_df %>% 
+        filter(0 < snow, snow < 100) %>%
+        ggplot(aes(x = year, y = snow)) +
+        geom_boxplot() +
+         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+max_min_bin_plot/snow_gr_0_plot
+```
+From the max_min_bin_plot, we can see that most of the temperature for tmax is between 0 and 30 degrees C and most of the temperature for tmin is between 0 and 15 degrees C.  
+From the snow_gr_0_plot, we can see that the median snowfall for each year is same. The range of the snowfall(75 quantile minus 25 quantile) is also close for each year. However, there are several outliers for snowfall in 1998, 2006, and 2010.
 
