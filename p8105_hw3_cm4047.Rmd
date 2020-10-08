@@ -145,6 +145,10 @@ Create a table:
 accel_df %>% 
          group_by(week, day_of_the_week) %>% 
          summarise(sum_activity = sum(activity_counts)) %>% 
+         pivot_wider(
+              names_from = week,
+              names_prefix = "week ",
+              values_from = sum_activity) %>% 
          knitr::kable()
 ```
 
@@ -249,15 +253,16 @@ ny_noaa %>%
                 tmax = as.numeric(tmax),
                 tmin = as.numeric(tmin)
         ) %>% 
-        summarise(average_max_temperature = mean(tmax)) %>% 
-        ggplot(aes(x = year, y = average_max_temperature, color = month, group = id)) +
+        summarise(average_max_temperature = mean(tmax, na.rm = T)) %>% 
+        drop_na() %>% 
+        ggplot(aes(x = year, y = average_max_temperature, color = id, group = id)) +
         geom_point(alpha = .2) +
         geom_path(alpha = .2) +
         facet_grid(.~ month) +
-        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+        theme(legend.position = 'none', axis.title.x = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
     
-From the scatterplot above, we can see that the average max temperature in January is lower than that in July in each station across years. Also, there is no significant increasing or decreasing trend from 1981 to 2010 in January and July.  
+From the scatterplot above, we can see that the average max temperature in January is lower than that in July in each station across years. Also, there is more outlier average max temperature in July than those in January.
 
 ```{r}
 noaa_df %>% 
