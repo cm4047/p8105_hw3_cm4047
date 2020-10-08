@@ -134,7 +134,8 @@ accel_df = read_csv("./data/accel_data.csv") %>%
         arrange(day_of_the_week, desc(no_of_day), .by_group = TRUE) %>% 
         select(-activity, -day, -no_of_day) %>%
         relocate(week, day_of_the_week, weekend_weekday) 
-```
+```  
+  
 This dataset shows the information about time which includes number of week, number of day, day of the week, weekend or weekday, and minute of the day. The activity counts on each minute is also a key variable in this dataset. There are `r nrow(accel_df)` observations in this dataset. And there are `r nrow(accel_df)` rows and `r ncol(accel_df)` columns in this dataset.     
 
 ###Question 2: create a table showing the total activity for each day:  
@@ -175,11 +176,13 @@ day_id_plot/(weekday_weekend_plot + week_plot)
 
 ```
 
-From the week_plot, we can find that this 63 year-old male has more acitvities for the second week and the third week than for the forth week and the fifth week since the mean of the activity counts shows the trend.     
-For the weekend_weekday plot, we can see that during the weekdays, he has regular activities. However, during the weekend, his activities decreased a lot during five weeks since the mean of activity counts during the weekend decreased a lot.   
+From the week_plot, we can find that this 63 year-old male has more acitvities for the second week and the third week than for the forth week and the fifth week since the mean of the activity counts shows the trend.   
+
+For the weekend_weekday plot, we can see that during the weekdays, he has regular activities. However, during the weekend, his activities decreased a lot during five weeks since the mean of activity counts during the weekend decreased a lot.    
+
 For the day_id_plot, we can see that he has moderate and regular activities on Tuesday, Wednesday, and Thursday. However, the amount of activity counts fluctuated a lot on Monday, Friday, and Saturday.
 
-###Question 3 :  
+###Question 3 :    
 
 Create a plot:
 ```{r}
@@ -187,7 +190,8 @@ accel_df %>%
         ggplot(aes(x = minute_of_day, y = activity_counts, color = day_of_the_week)) +
         geom_line(alpha = 0.2) +
         stat_smooth(se = FALSE)
-```
+```  
+  
 Zoom in the plot above:
 ```{r}
 accel_df %>% 
@@ -197,7 +201,8 @@ accel_df %>%
         coord_cartesian(ylim = c(0, 2500))
 ```
 
-The plot after zooming in shows the activity counts in each minute during 5 weeks and the information of the mean of activity counts for each day of the week. We can see that the acitivity counts of this 63 year-old male fluctuated a lot during a day. From 0 to 300 minutes(which equals 0:00 to 5:00), the activity counts are relatively low. After 300 minute(which equals to 5:00), the activity counts increased a lot. Around 1300 minutes(which equals to 21:40), the activity counts start to decrease. Until 1440 minutes(which equals to 24:00), the activity counts decreased to zero.  
+The plot after zooming in shows the activity counts in each minute during 5 weeks and the information of the mean of activity counts for each day of the week. We can see that the acitivity counts of this 63 year-old male fluctuated a lot during a day. From 0 to 300 minutes(which equals 0:00 to 5:00), the activity counts are relatively low. After 300 minute(which equals to 5:00), the activity counts increased a lot. Around 1300 minutes(which equals to 21:40), the activity counts start to decrease. Until 1440 minutes(which equals to 24:00), the activity counts decreased to zero.   
+
 And we can see that on Sunday, from 500 minutes to 750 minutes(which equals 8:20 to 12:30), he have more activity counts compared to the activity counts during the same period on other days. From 1100 minutes to 1400 minutes(which equals 18:20 to 23:20) on Friday, he have more activity counts compared to the activity counts during the same period on other days.  
 
 #Problem 3  
@@ -207,10 +212,11 @@ Load the data:
 library(p8105.datasets)
 data("ny_noaa")
 ```
+  
 This dataset includes `r ncol(ny_noaa)` columns and `r nrow(ny_noaa)` rows. It shows some information for all New York state weather stations from January 1, 1981 through December 31, 2010. There are some key variables, which include ID of weather station, date of observation, precipitation, temperature, and snow. For the total `r nrow(ny_noaa)` rows, there is `r nrow(ny_noaa[complete.cases(ny_noaa),])` rows which does not include NA, meaning around half of the rows include NAs in this dataset. It is problematic to some extent since there are so many NAs.
 
-###Question 1 : data cleaning:  
-
+###Question 1 : data cleaning:    
+  
 ```{r}
 noaa_df = 
 ny_noaa %>% 
@@ -229,10 +235,11 @@ snow_count_df =
         count(snow) %>% 
         arrange(desc(n))
 ```
+  
 From the dataset, we can conclude that for snowfall, the first three commonly observed values are `r pull(head(snow_count_df, 3), snow)`. For the most commonly observed value of 0, it is because most of these day are not snowy, so there is no snowfall on that day. For the second commonly observed value of NA, it is because some data are missing due to various of reasons. For the third commonly observed value of 25, it is a moderate number of snowfall.
 
-###Question 2 : two-panel plot showing the average max temperature in January and in July:  
-
+###Question 2 : two-panel plot showing the average max temperature in January and in July:    
+  
 ```{r}
 ny_noaa %>%
         separate(date, into = c("year", "month", "day"), sep = "-") %>%
@@ -249,8 +256,9 @@ ny_noaa %>%
         facet_grid(.~ month) +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 ```
-  
-From the scatterplot above, we can see that the average max temperature in January is lower than that in July in each station across years. Also, there is no significant increasing or decreasing trend from 1981 to 2010 in January and July.
+    
+From the scatterplot above, we can see that the average max temperature in January is lower than that in July in each station across years. Also, there is no significant increasing or decreasing trend from 1981 to 2010 in January and July.  
+
 ```{r}
 noaa_df %>% 
         filter(month %in% c("01", "07")) %>% 
@@ -269,6 +277,7 @@ noaa_df %>%
 From the boxplot above, we can find that there are some outliers. In Januaury, most of the outliers are higher than the upper edge of the boxplot and in July, most of the outliers are lower than the lower edge of the boxplot, which make sense. This means, in July, the extreme temperature are not very high and in January, the extreme temperature are not very low.
 
 ###Question 3: two-panel plot:  
+
 ```{r}
 max_min_bin_plot = 
         noaa_df %>%
@@ -284,6 +293,8 @@ snow_gr_0_plot =
          theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 max_min_bin_plot/snow_gr_0_plot
 ```
-From the max_min_bin_plot, we can see that most of the temperature for tmax is between 0 and 30 degrees C and most of the temperature for tmin is between 0 and 15 degrees C.  
+  
+From the max_min_bin_plot, we can see that most of the temperature for tmax is between 0 and 30 degrees C and most of the temperature for tmin is between 0 and 15 degrees C. The gradient of this plot is close to 1, which suggests that when tmin(minimum temperature) increases, tmax(maximum temperature) will also increase.  
+
 From the snow_gr_0_plot, we can see that the median snowfall for each year is same. The range of the snowfall(75 quantile minus 25 quantile) is also close for each year. However, there are several outliers for snowfall in 1998, 2006, and 2010.
 
